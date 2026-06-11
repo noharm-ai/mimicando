@@ -11,14 +11,19 @@ export function Teams({ go, state, set }) {
     if (teams.length >= 6) return
     const used = teams.map(t => t.palette)
     const pal = T.teams.find(p => !used.includes(p.id)) || T.teams[0]
-    set({ teams: [...teams, { id: Date.now(), name: pal.name, palette: pal.id,
+    const newId = teams.length > 0 ? Math.max(...teams.map(t => t.id)) + 1 : 1
+    set({ teams: [...teams, { id: newId, name: pal.name, palette: pal.id,
       c1: pal.c1, c2: pal.c2, emoji: pal.emoji }] })
   }
   const remove = (id) => set({ teams: teams.filter(t => t.id !== id) })
   const cycleEmoji = (id) => {
     const emojis = ['🐬','🐢','🦊','🦁','🐳','🦩','🐵','🦄','🐸','🦉','🐯','🐼']
-    set({ teams: teams.map(t => t.id === id
-      ? { ...t, emoji: emojis[(emojis.indexOf(t.emoji) + 1) % emojis.length] } : t) })
+    set({ teams: teams.map(t => {
+      if (t.id !== id) return t
+      const currentIndex = emojis.indexOf(t.emoji)
+      const nextIndex = currentIndex === -1 ? 0 : (currentIndex + 1) % emojis.length
+      return { ...t, emoji: emojis[nextIndex] }
+    }) })
   }
 
   return (

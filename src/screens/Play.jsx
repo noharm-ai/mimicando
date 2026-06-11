@@ -20,9 +20,11 @@ export function Play({ go, state, finishRound }) {
     if (time <= 0) { finishRound(team, results); return }
     const id = setTimeout(() => setTime(t => t - 1), 1000)
     return () => clearTimeout(id)
-  }, [time, paused])
+  }, [time, paused, team, results, finishRound])
 
-  const word = deckRef.current[idx % deckRef.current.length]
+  const word = deckRef.current.length > 0
+    ? deckRef.current[idx % deckRef.current.length]
+    : 'Sem palavras'
   const score = results.filter(r => r.got).length - (state.penalty ? results.filter(r => !r.got).length : 0)
 
   const advance = (got) => {
@@ -136,6 +138,16 @@ export function Play({ go, state, finishRound }) {
 
 // ── ROUND RESULT ──────────────────────────────────────────────────
 export function RoundResult({ go, state, nextTurn }) {
+  if (!state.lastRound) {
+    return (
+      <Body bg={T.page}>
+        <div style={{ textAlign: 'center', padding: 20 }}>
+          <p style={{ color: T.muted }}>Nenhum resultado disponível.</p>
+          <Btn full variant="primary" onClick={() => go('home')}>Voltar ao início</Btn>
+        </div>
+      </Body>
+    )
+  }
   const { team, results, gained } = state.lastRound
   const got = results.filter(r => r.got)
   const skipped = results.filter(r => !r.got)
@@ -206,6 +218,14 @@ function StatCard({ label, value, color, icon }) {
 // ── WINNER ────────────────────────────────────────────────────────
 export function Winner({ go, state, reset }) {
   const ranked = [...state.teams].sort((a, b) => (state.scores[b.id] || 0) - (state.scores[a.id] || 0))
+  if (ranked.length === 0) {
+    return (
+      <div style={{ padding: 20 }}>
+        <p>Nenhum time encontrado.</p>
+        <Btn onClick={() => go('home')}>Voltar</Btn>
+      </div>
+    )
+  }
   const champ = ranked[0]
   const confetti = React.useMemo(() => Array.from({ length: 26 }, (_, i) => ({
     left: Math.random() * 100, delay: Math.random() * 1.2, dur: 2 + Math.random() * 1.5,
