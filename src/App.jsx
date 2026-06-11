@@ -1,5 +1,5 @@
 import React from 'react'
-import { T, Phone } from './theme.jsx'
+import { T } from './theme.jsx'
 import { buildDeck } from './data.js'
 import { Home, ModeSelect, Packs, HowToPlay, Settings } from './screens/Setup.jsx'
 import { Teams, Ready } from './screens/Teams.jsx'
@@ -67,28 +67,11 @@ export default function App() {
 
   const dark = DARK_STATUS.includes(screen)
 
-  const [scale, setScale] = React.useState(1)
-  React.useEffect(() => {
-    const fit = () => {
-      const s = Math.min((window.innerHeight - 40) / 864, (window.innerWidth - 32) / 410, 1.15)
-      setScale(Math.max(0.4, s))
-    }
-    fit()
-    window.addEventListener('resize', fit)
-    return () => window.removeEventListener('resize', fit)
-  }, [])
-
   return (
-    <div className="stage">
-      <div style={{ width: 390 * scale, height: 844 * scale }}>
-        <div style={{ transform: `scale(${scale})`, transformOrigin: 'top left' }}>
-          <Phone statusDark={dark} statusTint="transparent">
-            <div key={screen} className="anim-in"
-              style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}>
-              {view}
-            </div>
-          </Phone>
-        </div>
+    <div style={{ minHeight: '100vh', width: '100%', position: 'relative', overflow: 'hidden' }}>
+      <div key={screen} className="anim-in"
+        style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}>
+        {view}
       </div>
     </div>
   )
