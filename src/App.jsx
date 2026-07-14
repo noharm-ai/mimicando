@@ -29,10 +29,12 @@ export default function App() {
   const set = (patch) => setSt(s => ({ ...s, ...patch }))
   const go = (screen) => set({ screen })
 
-  const finishRound = (team, results) => {
+  // `shown` = palavras exibidas na rodada (inclui a que ficou na tela ao acabar
+  // o tempo, mesmo não resolvida) para não repetir para o próximo time.
+  const finishRound = (team, results, shown = results.length) => {
     const gained = results.filter(r => r.got).length - (st.penalty ? results.filter(r => !r.got).length : 0)
     const scores = { ...st.scores, [team.id]: Math.max(0, (st.scores[team.id] || 0) + gained) }
-    setSt(s => ({ ...s, scores, cursor: s.cursor + results.length,
+    setSt(s => ({ ...s, scores, cursor: s.cursor + shown,
       lastRound: { team, results, gained }, screen: 'roundresult' }))
   }
 

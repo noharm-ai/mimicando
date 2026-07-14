@@ -2,6 +2,7 @@ import React from 'react'
 import { T, Btn, IconBtn, Eyebrow } from '../theme.jsx'
 import { Icon } from '../icons.jsx'
 import { MODES, themeForWord } from '../data.js'
+import { playTick, playWhistle, playBuzzer } from '../sound.js'
 import { Body } from './Setup.jsx'
 
 // ── GAMEPLAY ──────────────────────────────────────────────────────
@@ -17,22 +18,39 @@ export function Play({ go, state, finishRound }) {
   const [confirmExit, setConfirmExit] = React.useState(false)
   const [flash, setFlash] = React.useState(null)
 
-  React.useEffect(() => {
-    if (paused) return
-    if (time <= 0) { finishRound(team, results); return }
-    const id = setTimeout(() => setTime(t => t - 1), 1000)
-    return () => clearTimeout(id)
-  }, [time, paused, team, results, finishRound])
-
   const deck = deckRef.current
   const pos = startRef.current + idx
   const exhausted = deck.length === 0 || pos >= deck.length
   const word = exhausted ? null : deck[pos]
   const theme = word ? themeForWord(word, state.packs) : null
   const score = results.filter(r => r.got).length - (state.penalty ? results.filter(r => !r.got).length : 0)
+  // palavras exibidas: resolvidas + a que está na tela (se ainda houver)
+  const shown = results.length + (exhausted ? 0 : 1)
+
+  // apito ao começar a rodada
+  React.useEffect(() => {
+    if (state.sound) playWhistle()
+  }, [])
+
+  // tic-tac nos últimos 5 segundos (tom alterna para soar tic/tac)
+  React.useEffect(() => {
+    if (state.sound && !paused && time > 0 && time <= 5) playTick(time % 2 === 1)
+  }, [time])
+
+  React.useEffect(() => {
+    if (paused) return
+    if (time <= 0) {
+      if (state.sound) playBuzzer()
+      finishRound(team, results, shown)
+      return
+    }
+    const id = setTimeout(() => setTime(t => t - 1), 1000)
+    return () => clearTimeout(id)
+  }, [time, paused, team, results, shown, finishRound])
 
   const advance = (got) => {
     setFlash(got ? 'ok' : 'skip')
+    if (state.sound) (got ? playWhistle(0.5) : playBuzzer(0.5))
     setTimeout(() => setFlash(null), 260)
     setResults(r => [...r, { word, got }])
     setIdx(i => i + 1)
@@ -78,10 +96,10 @@ export function Play({ go, state, finishRound }) {
             </svg>
             <div className={low ? 'anim-pop' : ''} key={low ? time : 'x'}
               style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
-                display: 'grid', placeItems: 'center', flexDirection: 'column' }}>
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
               <div className="display" style={{ fontSize: 46, fontWeight: 700, color: '#fff', lineHeight: 1 }}>{time}</div>
               <div style={{ fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,0.8)',
-                letterSpacing: '1.5px', textTransform: 'uppercase' }}>segundos</div>
+                letterSpacing: '1.5px', textTransform: 'uppercase', marginTop: 3 }}>segundos</div>
             </div>
           </div>
         </div>
@@ -142,7 +160,7 @@ export function Play({ go, state, finishRound }) {
         ) : (
           <div style={{ display: 'flex', gap: 14 }}>
             <Btn variant="skip" size="lg" full onClick={() => advance(false)} style={{ padding: '22px 0' }}>
-              <Icon name="skipfwd" size={26} color="#fff" /> Passar
+              <Icon name="skipfwd" size={26} color="#fff" /> Pular
             </Btn>
             <Btn variant="ok" size="lg" full onClick={() => advance(true)} style={{ padding: '22px 0' }}>
               <Icon name="check" size={28} color="#fff" stroke={3} /> Acertou
@@ -219,7 +237,7 @@ export function RoundResult({ go, state, nextTurn }) {
 
       <div style={{ display: 'flex', gap: 12, marginBottom: 18 }}>
         <StatCard label="Acertos"  value={`+${got.length}`} color={T.ok}   icon="check"   />
-        <StatCard label="Passou"   value={skipped.length}    color={T.skip} icon="skipfwd" />
+        <StatCard label="Pulou"    value={skipped.length}    color={T.skip} icon="skipfwd" />
         <StatCard label="Total"    value={total}             color={T.teal} icon="trophy"  />
       </div>
 

@@ -242,7 +242,7 @@ export function Settings({ go, state, set }) {
           <Toggle on={state.haptics} onClick={() => set({ haptics: !state.haptics })} />
         </Row>
         <div style={{ height: 1, background: T.line }} />
-        <Row label="Penalizar ao passar" icon="skipfwd">
+        <Row label="Penalizar ao pular" icon="skipfwd">
           <Toggle on={state.penalty} onClick={() => set({ penalty: !state.penalty })} />
         </Row>
       </div>

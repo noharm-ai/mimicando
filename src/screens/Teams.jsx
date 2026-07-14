@@ -77,7 +77,7 @@ export function Teams({ go, state, set }) {
         <Stepper label="Tempo por rodada" icon="clock" suffix="s" step={15} min={30} max={120}
           value={state.roundTime} onChange={v => set({ roundTime: v })} />
         <div style={{ height: 1, background: T.line, margin: '12px 0' }} />
-        <Stepper label="Meta de pontos" icon="trophy" suffix="" step={5} min={10} max={50}
+        <Stepper label="Meta de pontos" icon="trophy" suffix="" step={10} min={10} max={100}
           value={state.target} onChange={v => set({ target: v })} />
       </div>
 
