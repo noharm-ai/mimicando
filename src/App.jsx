@@ -18,6 +18,7 @@ const DEFAULT = () => ({
   turn: 0,
   scores: {},
   deck: [],
+  cursor: 0,
   lastRound: null,
 })
 
@@ -31,22 +32,24 @@ export default function App() {
   const finishRound = (team, results) => {
     const gained = results.filter(r => r.got).length - (st.penalty ? results.filter(r => !r.got).length : 0)
     const scores = { ...st.scores, [team.id]: Math.max(0, (st.scores[team.id] || 0) + gained) }
-    setSt(s => ({ ...s, scores, lastRound: { team, results, gained }, screen: 'roundresult' }))
+    setSt(s => ({ ...s, scores, cursor: s.cursor + results.length,
+      lastRound: { team, results, gained }, screen: 'roundresult' }))
   }
 
   const nextTurn = () => {
     const champ = st.teams.find(t => (st.scores[t.id] || 0) >= st.target)
     if (champ) { go('winner'); return }
-    setSt(s => ({ ...s, turn: s.turn + 1, deck: buildDeck(s.packs), screen: 'ready' }))
+    // mantém o mesmo baralho e avança pelo cursor: sem repetir palavras no jogo
+    setSt(s => ({ ...s, turn: s.turn + 1, screen: 'ready' }))
   }
 
   const reset = () => setSt(s => ({
     ...DEFAULT(), teams: s.teams, mode: s.mode, packs: s.packs,
     roundTime: s.roundTime, target: s.target, sound: s.sound, haptics: s.haptics, penalty: s.penalty,
-    screen: 'ready', turn: 0, scores: {}, deck: buildDeck(s.packs),
+    screen: 'ready', turn: 0, scores: {}, deck: buildDeck(s.packs), cursor: 0,
   }))
 
-  const goReady = () => setSt(s => ({ ...s, deck: buildDeck(s.packs), screen: 'ready' }))
+  const goReady = () => setSt(s => ({ ...s, deck: buildDeck(s.packs), cursor: 0, screen: 'ready' }))
   const enhancedGo = (screen) => {
     if (screen === 'ready') { goReady(); return }
     go(screen)

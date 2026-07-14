@@ -117,6 +117,9 @@ function Stepper({ label, icon, value, onChange, step, min, max, suffix }) {
 export function Ready({ go, state }) {
   const team = state.teams[state.turn % state.teams.length]
   const mode = MODES.find(m => m.id === state.mode)
+  const [confirmExit, setConfirmExit] = React.useState(false)
+  const hasProgress = state.turn > 0 || Object.values(state.scores || {}).some(v => v > 0)
+  const handleBack = () => hasProgress ? setConfirmExit(true) : go('teams')
   return (
     <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
       background: `linear-gradient(160deg, ${team.c1}, ${team.c2})`, overflow: 'hidden' }}>
@@ -124,7 +127,7 @@ export function Ready({ go, state }) {
         background: 'rgba(255,255,255,0.14)', top: -110, left: -80 }} />
       <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
         padding: '60px 28px 28px', display: 'flex', flexDirection: 'column' }}>
-        <IconBtn light onClick={() => go('teams')} style={{ alignSelf: 'flex-start' }}>
+        <IconBtn light onClick={handleBack} style={{ alignSelf: 'flex-start' }}>
           <Icon name="back" size={22} />
         </IconBtn>
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
@@ -150,6 +153,25 @@ export function Ready({ go, state }) {
           <Icon name="play" size={24} color={team.c1} /> Estamos prontos!
         </Btn>
       </div>
+
+      {confirmExit && (
+        <div className="anim-in" style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
+          zIndex: 35, background: 'rgba(46,60,90,0.55)', backdropFilter: 'blur(6px)',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          gap: 16, padding: 30 }}>
+          <div className="display" style={{ color: '#fff', fontSize: 30, fontWeight: 700, textAlign: 'center' }}>
+            Sair da partida?
+          </div>
+          <div style={{ color: 'rgba(255,255,255,0.9)', fontWeight: 600, fontSize: 15,
+            textAlign: 'center', maxWidth: 280, lineHeight: 1.4 }}>
+            Você vai perder a pontuação atual do jogo.
+          </div>
+          <Btn variant="white" size="lg" full onClick={() => setConfirmExit(false)}>
+            <Icon name="play" size={22} color={team.c1} /> Continuar jogando
+          </Btn>
+          <Btn variant="ghost" size="md" full onClick={() => go('teams')}>Sair e perder pontos</Btn>
+        </div>
+      )}
     </div>
   )
 }

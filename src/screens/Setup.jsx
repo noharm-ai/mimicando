@@ -156,7 +156,7 @@ export function Packs({ go, state, set }) {
               )}
               <div style={{ fontSize: 38, lineHeight: 1, marginBottom: 8 }}>{p.emoji}</div>
               <div className="display" style={{ fontSize: 18, fontWeight: 600, color: T.navy }}>{p.name}</div>
-              <div style={{ fontSize: 13, color: T.muted, fontWeight: 700 }}>{p.n} palavras</div>
+              <div style={{ fontSize: 13, color: T.muted, fontWeight: 700 }}>{p.words.length} palavras</div>
               <div style={{ position: 'absolute', bottom: 14, right: 14, width: 24, height: 24,
                 borderRadius: '50%', border: `2.5px solid ${on ? T.teal : T.edge}`,
                 background: on ? T.teal : '#fff', display: 'grid', placeItems: 'center', color: '#fff' }}>

@@ -9,10 +9,12 @@ export function Play({ go, state, finishRound }) {
   const team = state.teams[state.turn % state.teams.length]
   const mode = MODES.find(m => m.id === state.mode)
   const deckRef = React.useRef(state.deck)
+  const startRef = React.useRef(state.cursor)
   const [idx, setIdx] = React.useState(0)
   const [results, setResults] = React.useState([])
   const [time, setTime] = React.useState(state.roundTime)
   const [paused, setPaused] = React.useState(false)
+  const [confirmExit, setConfirmExit] = React.useState(false)
   const [flash, setFlash] = React.useState(null)
 
   React.useEffect(() => {
@@ -22,9 +24,10 @@ export function Play({ go, state, finishRound }) {
     return () => clearTimeout(id)
   }, [time, paused, team, results, finishRound])
 
-  const word = deckRef.current.length > 0
-    ? deckRef.current[idx % deckRef.current.length]
-    : 'Sem palavras'
+  const deck = deckRef.current
+  const pos = startRef.current + idx
+  const exhausted = deck.length === 0 || pos >= deck.length
+  const word = exhausted ? null : deck[pos]
   const score = results.filter(r => r.got).length - (state.penalty ? results.filter(r => !r.got).length : 0)
 
   const advance = (got) => {
@@ -84,18 +87,31 @@ export function Play({ go, state, finishRound }) {
 
         {/* word card */}
         <div style={{ flex: 1, display: 'grid', placeItems: 'center' }}>
-          <div key={idx} className="anim-pop" style={{ width: '100%', background: '#fff',
-            borderRadius: 28, padding: '40px 24px', textAlign: 'center', boxShadow: T.shadowLg,
-            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7,
-              background: `${team.c1}14`, color: team.c2, borderRadius: 999, padding: '7px 14px',
-              fontFamily: 'var(--display)', fontWeight: 600, fontSize: 13 }}>
-              <Icon name={mode.icon} size={16} /> {mode.name}
+          {exhausted ? (
+            <div key="done" className="anim-pop" style={{ width: '100%', background: '#fff',
+              borderRadius: 28, padding: '40px 24px', textAlign: 'center', boxShadow: T.shadowLg,
+              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
+              <div style={{ fontSize: 52 }}>🎉</div>
+              <div className="display" style={{ fontSize: 30, fontWeight: 700, color: T.navy,
+                lineHeight: 1.1, letterSpacing: '-0.5px' }}>Acabaram as palavras!</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: T.muted }}>
+                Todas as palavras do jogo já foram usadas.
+              </div>
             </div>
-            <div className="display" style={{ fontSize: 44, fontWeight: 700, color: T.navy,
-              lineHeight: 1.05, letterSpacing: '-0.5px' }}>{word}</div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: T.muted }}>Palavra {idx + 1}</div>
-          </div>
+          ) : (
+            <div key={idx} className="anim-pop" style={{ width: '100%', background: '#fff',
+              borderRadius: 28, padding: '40px 24px', textAlign: 'center', boxShadow: T.shadowLg,
+              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7,
+                background: `${team.c1}14`, color: team.c2, borderRadius: 999, padding: '7px 14px',
+                fontFamily: 'var(--display)', fontWeight: 600, fontSize: 13 }}>
+                <Icon name={mode.icon} size={16} /> {mode.name}
+              </div>
+              <div className="display" style={{ fontSize: 44, fontWeight: 700, color: T.navy,
+                lineHeight: 1.05, letterSpacing: '-0.5px' }}>{word}</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: T.muted }}>Palavra {idx + 1}</div>
+            </div>
+          )}
         </div>
 
         {/* score pill */}
@@ -109,14 +125,20 @@ export function Play({ go, state, finishRound }) {
         </div>
 
         {/* action buttons */}
-        <div style={{ display: 'flex', gap: 14 }}>
-          <Btn variant="skip" size="lg" full onClick={() => advance(false)} style={{ padding: '22px 0' }}>
-            <Icon name="skipfwd" size={26} color="#fff" /> Passar
+        {exhausted ? (
+          <Btn variant="white" size="lg" full onClick={() => finishRound(team, results)} style={{ padding: '22px 0' }}>
+            <Icon name="check" size={26} color={team.c1} stroke={3} /> Finalizar rodada
           </Btn>
-          <Btn variant="ok" size="lg" full onClick={() => advance(true)} style={{ padding: '22px 0' }}>
-            <Icon name="check" size={28} color="#fff" stroke={3} /> Acertou
-          </Btn>
-        </div>
+        ) : (
+          <div style={{ display: 'flex', gap: 14 }}>
+            <Btn variant="skip" size="lg" full onClick={() => advance(false)} style={{ padding: '22px 0' }}>
+              <Icon name="skipfwd" size={26} color="#fff" /> Passar
+            </Btn>
+            <Btn variant="ok" size="lg" full onClick={() => advance(true)} style={{ padding: '22px 0' }}>
+              <Icon name="check" size={28} color="#fff" stroke={3} /> Acertou
+            </Btn>
+          </div>
+        )}
       </div>
 
       {/* pause overlay */}
@@ -129,7 +151,27 @@ export function Play({ go, state, finishRound }) {
           <Btn variant="white" size="lg" full onClick={() => setPaused(false)}>
             <Icon name="play" size={22} color={team.c1} /> Continuar
           </Btn>
-          <Btn variant="ghost" size="md" full onClick={() => go('teams')}>Sair da partida</Btn>
+          <Btn variant="ghost" size="md" full onClick={() => setConfirmExit(true)}>Sair da partida</Btn>
+        </div>
+      )}
+
+      {/* exit confirmation */}
+      {confirmExit && (
+        <div className="anim-in" style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
+          zIndex: 40, background: 'rgba(46,60,90,0.6)', backdropFilter: 'blur(6px)',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          gap: 16, padding: 30 }}>
+          <div className="display" style={{ color: '#fff', fontSize: 30, fontWeight: 700, textAlign: 'center' }}>
+            Sair da partida?
+          </div>
+          <div style={{ color: 'rgba(255,255,255,0.9)', fontWeight: 600, fontSize: 15,
+            textAlign: 'center', maxWidth: 280, lineHeight: 1.4 }}>
+            Você vai perder a pontuação atual do jogo.
+          </div>
+          <Btn variant="white" size="lg" full onClick={() => setConfirmExit(false)}>
+            <Icon name="play" size={22} color={team.c1} /> Continuar jogando
+          </Btn>
+          <Btn variant="ghost" size="md" full onClick={() => go('teams')}>Sair e perder pontos</Btn>
         </div>
       )}
     </div>
