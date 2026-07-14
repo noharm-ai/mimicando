@@ -1,7 +1,7 @@
 import React from 'react'
 import { T, Btn, IconBtn, Eyebrow } from '../theme.jsx'
 import { Icon } from '../icons.jsx'
-import { MODES } from '../data.js'
+import { MODES, themeForWord } from '../data.js'
 import { Body } from './Setup.jsx'
 
 // ── GAMEPLAY ──────────────────────────────────────────────────────
@@ -28,6 +28,7 @@ export function Play({ go, state, finishRound }) {
   const pos = startRef.current + idx
   const exhausted = deck.length === 0 || pos >= deck.length
   const word = exhausted ? null : deck[pos]
+  const theme = word ? themeForWord(word, state.packs) : null
   const score = results.filter(r => r.got).length - (state.penalty ? results.filter(r => !r.got).length : 0)
 
   const advance = (got) => {
@@ -102,10 +103,19 @@ export function Play({ go, state, finishRound }) {
             <div key={idx} className="anim-pop" style={{ width: '100%', background: '#fff',
               borderRadius: 28, padding: '40px 24px', textAlign: 'center', boxShadow: T.shadowLg,
               display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7,
-                background: `${team.c1}14`, color: team.c2, borderRadius: 999, padding: '7px 14px',
-                fontFamily: 'var(--display)', fontWeight: 600, fontSize: 13 }}>
-                <Icon name={mode.icon} size={16} /> {mode.name}
+              <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 7 }}>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7,
+                  background: `${team.c1}14`, color: team.c2, borderRadius: 999, padding: '7px 14px',
+                  fontFamily: 'var(--display)', fontWeight: 600, fontSize: 13 }}>
+                  <Icon name={mode.icon} size={16} /> {mode.name}
+                </div>
+                {theme && (
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6,
+                    background: `${T.navy}0d`, color: T.navy, borderRadius: 999, padding: '7px 14px',
+                    fontFamily: 'var(--display)', fontWeight: 600, fontSize: 13 }}>
+                    <span style={{ fontSize: 15 }}>{theme.emoji}</span> {theme.name}
+                  </div>
+                )}
               </div>
               <div className="display" style={{ fontSize: 44, fontWeight: 700, color: T.navy,
                 lineHeight: 1.05, letterSpacing: '-0.5px' }}>{word}</div>

@@ -69,3 +69,12 @@ export function buildDeck(packIds) {
   }
   return pool
 }
+
+// Retorna o tema (pacote) de uma palavra entre os pacotes selecionados.
+// Para palavras em mais de um pacote (ex.: "Tubarão"), usa o primeiro na ordem de PACKS.
+export function themeForWord(word, packIds) {
+  const selected = PACKS.filter(p => packIds.includes(p.id))
+  const list = selected.length ? selected : [PACKS[0]]
+  const pack = list.find(p => p.words.includes(word))
+  return pack ? { name: pack.name, emoji: pack.emoji } : null
+}
