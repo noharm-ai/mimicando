@@ -1,6 +1,6 @@
 import React from 'react'
 import { T } from './theme.jsx'
-import { buildDeck, wordPoints } from './data.js'
+import { buildDeck, wordPoints, PACKS } from './data.js'
 import { Home, ModeSelect, Packs, HowToPlay, Settings } from './screens/Setup.jsx'
 import { Teams, Ready } from './screens/Teams.jsx'
 import { Play, RoundResult, Winner } from './screens/Play.jsx'
@@ -8,7 +8,7 @@ import { Play, RoundResult, Winner } from './screens/Play.jsx'
 const DEFAULT = () => ({
   screen: 'home',
   mode: 'mimica',
-  packs: ['animais', 'filmes'],
+  packs: PACKS.map(p => p.id),
   difficulty: 'all',
   teams: T.teams.slice(0, 2).map((p, i) => ({
     id: i + 1, name: p.name, palette: p.id, c1: p.c1, c2: p.c2, emoji: p.emoji,
