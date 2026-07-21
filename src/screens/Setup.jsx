@@ -1,7 +1,7 @@
 import React from 'react'
 import { T, Btn, IconBtn, Eyebrow } from '../theme.jsx'
 import { Icon } from '../icons.jsx'
-import { MODES, PACKS, DIFFICULTY } from '../data.js'
+import { MODES, PACKS, DIFFICULTY, buildDeck, difficultyForWord } from '../data.js'
 
 export function Body({ children, bg = T.page, pad = 24, style = {} }) {
   return (
@@ -134,6 +134,13 @@ export function Packs({ go, state, set }) {
     const cur = state.packs
     set({ packs: cur.includes(id) ? cur.filter(p => p !== id) : [...cur, id] })
   }
+  // conta as palavras disponíveis por nível (respeitando os temas selecionados)
+  const counts = React.useMemo(() => {
+    const pool = state.packs.length ? buildDeck(state.packs, 'all') : []
+    const c = { all: pool.length, 1: 0, 2: 0, 3: 0 }
+    pool.forEach(w => { c[difficultyForWord(w)]++ })
+    return c
+  }, [state.packs])
   return (
     <Body>
       <TopBar onBack={() => go('mode')} title="Temas" />
@@ -152,11 +159,18 @@ export function Packs({ go, state, set }) {
             const on = String(state.difficulty) === opt.id
             return (
               <button key={opt.id} onClick={() => set({ difficulty: opt.id })}
-                style={{ flex: 1, padding: '11px 4px', borderRadius: 14,
+                style={{ flex: 1, padding: '10px 4px', borderRadius: 14,
                   border: `2.5px solid ${on ? opt.color : T.edge}`,
-                  background: on ? `${opt.color}1a` : '#fff', color: on ? opt.color : T.muted,
-                  fontFamily: 'var(--display)', fontWeight: 700, fontSize: 14, transition: 'all .18s' }}>
-                {opt.name}
+                  background: on ? `${opt.color}1a` : '#fff',
+                  fontFamily: 'var(--display)', transition: 'all .18s',
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                <span style={{ color: on ? opt.color : T.muted, fontWeight: 700, fontSize: 14 }}>
+                  {opt.name}
+                </span>
+                <span style={{ color: on ? opt.color : T.muted, fontWeight: 700, fontSize: 12,
+                  opacity: 0.75 }}>
+                  {counts[opt.id]}
+                </span>
               </button>
             )
           })}
