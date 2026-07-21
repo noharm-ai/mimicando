@@ -9,7 +9,7 @@ const DEFAULT = () => ({
   screen: 'home',
   mode: 'mimica',
   packs: PACKS.map(p => p.id),
-  difficulty: 'all',
+  difficulty: [1, 2, 3],
   teams: T.teams.slice(0, 2).map((p, i) => ({
     id: i + 1, name: p.name, palette: p.id, c1: p.c1, c2: p.c2, emoji: p.emoji,
   })),

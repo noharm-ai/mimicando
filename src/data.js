@@ -217,14 +217,16 @@ export function wordPoints(word) {
   return DIFFICULTY[difficultyForWord(word)].points
 }
 
-export function buildDeck(packIds, difficulty = 'all') {
+// levels: lista de níveis de dificuldade aceitos (ex.: [1, 3]). Vazio ou com os
+// três níveis = sem filtro. Aceita também os itens como string.
+export function buildDeck(packIds, levels = [1, 2, 3]) {
   let pool = []
   PACKS.filter(p => packIds.includes(p.id)).forEach(p => { pool = pool.concat(p.words) })
   if (!pool.length) pool = PACKS[0].words.slice()
   pool = [...new Set(pool)] // remove duplicatas entre pacotes (ex.: "Tubarão")
-  if (difficulty && difficulty !== 'all') {
-    const lvl = Number(difficulty)
-    const filtered = pool.filter(w => difficultyForWord(w) === lvl)
+  const set = new Set((levels || []).map(Number))
+  if (set.size && set.size < 3) {
+    const filtered = pool.filter(w => set.has(difficultyForWord(w)))
     if (filtered.length) pool = filtered // evita baralho vazio se o filtro zerar
   }
   for (let i = pool.length - 1; i > 0; i--) {

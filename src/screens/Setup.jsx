@@ -134,13 +134,18 @@ export function Packs({ go, state, set }) {
     const cur = state.packs
     set({ packs: cur.includes(id) ? cur.filter(p => p !== id) : [...cur, id] })
   }
+  const toggleDiff = (lvl) => {
+    const cur = state.difficulty
+    set({ difficulty: cur.includes(lvl) ? cur.filter(l => l !== lvl) : [...cur, lvl] })
+  }
   // conta as palavras disponíveis por nível (respeitando os temas selecionados)
   const counts = React.useMemo(() => {
-    const pool = state.packs.length ? buildDeck(state.packs, 'all') : []
-    const c = { all: pool.length, 1: 0, 2: 0, 3: 0 }
+    const pool = state.packs.length ? buildDeck(state.packs, [1, 2, 3]) : []
+    const c = { 1: 0, 2: 0, 3: 0 }
     pool.forEach(w => { c[difficultyForWord(w)]++ })
     return c
   }, [state.packs])
+  const canContinue = state.packs.length && state.difficulty.length
   return (
     <Body>
       <TopBar onBack={() => go('mode')} title="Temas" />
@@ -153,23 +158,26 @@ export function Packs({ go, state, set }) {
         <div className="display" style={{ fontSize: 15, fontWeight: 600, color: T.muted,
           marginBottom: 10, letterSpacing: '.5px' }}>DIFICULDADE</div>
         <div style={{ display: 'flex', gap: 8 }}>
-          {[{ id: 'all', name: 'Todas', color: T.teal }].concat(
-            Object.values(DIFFICULTY).map(d => ({ id: String(d.level), name: d.name, color: d.color }))
-          ).map(opt => {
-            const on = String(state.difficulty) === opt.id
+          {Object.values(DIFFICULTY).map(d => {
+            const on = state.difficulty.includes(d.level)
             return (
-              <button key={opt.id} onClick={() => set({ difficulty: opt.id })}
-                style={{ flex: 1, padding: '10px 4px', borderRadius: 14,
-                  border: `2.5px solid ${on ? opt.color : T.edge}`,
-                  background: on ? `${opt.color}1a` : '#fff',
+              <button key={d.level} onClick={() => toggleDiff(d.level)}
+                style={{ flex: 1, padding: '10px 4px', borderRadius: 14, position: 'relative',
+                  border: `2.5px solid ${on ? d.color : T.edge}`,
+                  background: on ? `${d.color}1a` : '#fff',
                   fontFamily: 'var(--display)', transition: 'all .18s',
                   display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-                <span style={{ color: on ? opt.color : T.muted, fontWeight: 700, fontSize: 14 }}>
-                  {opt.name}
+                <div style={{ position: 'absolute', top: 6, right: 6, width: 16, height: 16,
+                  borderRadius: '50%', border: `2px solid ${on ? d.color : T.edge}`,
+                  background: on ? d.color : '#fff', display: 'grid', placeItems: 'center', color: '#fff' }}>
+                  {on && <Icon name="check" size={10} stroke={4} />}
+                </div>
+                <span style={{ color: on ? d.color : T.muted, fontWeight: 700, fontSize: 14 }}>
+                  {d.name}
                 </span>
-                <span style={{ color: on ? opt.color : T.muted, fontWeight: 700, fontSize: 12,
+                <span style={{ color: on ? d.color : T.muted, fontWeight: 700, fontSize: 12,
                   opacity: 0.75 }}>
-                  {counts[opt.id]}
+                  {counts[d.level]}
                 </span>
               </button>
             )
@@ -203,9 +211,11 @@ export function Packs({ go, state, set }) {
         })}
       </div>
       <div style={{ flex: 1, minHeight: 16 }} />
-      <Btn full variant="primary" disabled={!state.packs.length} style={{ marginTop: 16 }}
+      <Btn full variant="primary" disabled={!canContinue} style={{ marginTop: 16 }}
         onClick={() => go('teams')}>
-        {state.packs.length ? `Continuar · ${state.packs.length} tema(s)` : 'Selecione um tema'}
+        {!state.packs.length ? 'Selecione um tema'
+          : !state.difficulty.length ? 'Selecione uma dificuldade'
+          : `Continuar · ${state.packs.length} tema(s)`}
         <Icon name="arrowR" size={22} />
       </Btn>
     </Body>
