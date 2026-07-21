@@ -1,8 +1,8 @@
 import React from 'react'
 import { T, Btn, IconBtn, Eyebrow } from '../theme.jsx'
 import { Icon } from '../icons.jsx'
-import { MODES, themeForWord } from '../data.js'
-import { playTick, playWhistle, playBuzzer } from '../sound.js'
+import { MODES, themeForWord, difficultyForWord, wordPoints, DIFFICULTY } from '../data.js'
+import { playTick, playWhistle, playBuzzer, startSiren } from '../sound.js'
 import { Body } from './Setup.jsx'
 
 // ── GAMEPLAY ──────────────────────────────────────────────────────
@@ -23,7 +23,9 @@ export function Play({ go, state, finishRound }) {
   const exhausted = deck.length === 0 || pos >= deck.length
   const word = exhausted ? null : deck[pos]
   const theme = word ? themeForWord(word, state.packs) : null
-  const score = results.filter(r => r.got).length - (state.penalty ? results.filter(r => !r.got).length : 0)
+  const diff = word ? DIFFICULTY[difficultyForWord(word)] : null
+  const score = results.reduce((s, r) =>
+    s + (r.got ? wordPoints(r.word) : (state.penalty ? -1 : 0)), 0)
   // palavras exibidas: resolvidas + a que está na tela (se ainda houver)
   const shown = results.length + (exhausted ? 0 : 1)
 
@@ -31,6 +33,13 @@ export function Play({ go, state, finishRound }) {
   React.useEffect(() => {
     if (state.sound) playWhistle()
   }, [])
+
+  // sirene contínua enquanto o jogo estiver pausado
+  React.useEffect(() => {
+    if (!state.sound || !paused) return
+    const stop = startSiren()
+    return stop
+  }, [paused, state.sound])
 
   // tic-tac nos últimos 5 segundos (tom alterna para soar tic/tac)
   React.useEffect(() => {
@@ -134,6 +143,13 @@ export function Play({ go, state, finishRound }) {
                     <span style={{ fontSize: 15 }}>{theme.emoji}</span> {theme.name}
                   </div>
                 )}
+                {diff && (
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6,
+                    background: `${diff.color}1f`, color: diff.color, borderRadius: 999, padding: '7px 14px',
+                    fontFamily: 'var(--display)', fontWeight: 700, fontSize: 13 }}>
+                    {diff.name} · {diff.points}pt
+                  </div>
+                )}
               </div>
               <div className="display" style={{ fontSize: 44, fontWeight: 700, color: T.navy,
                 lineHeight: 1.05, letterSpacing: '-0.5px' }}>{word}</div>
@@ -222,6 +238,7 @@ export function RoundResult({ go, state, nextTurn }) {
   const got = results.filter(r => r.got)
   const skipped = results.filter(r => !r.got)
   const total = state.scores[team.id] || 0
+  const ranked = [...state.teams].sort((a, b) => (state.scores[b.id] || 0) - (state.scores[a.id] || 0))
   return (
     <Body bg={T.page}>
       <div style={{ textAlign: 'center', marginBottom: 18 }}>
@@ -241,10 +258,42 @@ export function RoundResult({ go, state, nextTurn }) {
         <StatCard label="Total"    value={total}             color={T.teal} icon="trophy"  />
       </div>
 
-      <div style={{ background: '#fff', borderRadius: 20, padding: 16, boxShadow: T.shadowSm, flex: 1 }}>
+      {ranked.length > 1 && (
+        <div style={{ background: '#fff', borderRadius: 20, padding: 16, boxShadow: T.shadowSm, marginBottom: 14 }}>
+          <div className="display" style={{ fontSize: 15, fontWeight: 600, color: T.muted,
+            marginBottom: 10, letterSpacing: '.5px' }}>PLACAR PARCIAL</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            {ranked.map((t, i) => (
+              <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px',
+                borderRadius: 12, background: t.id === team.id ? `${t.c1}12` : 'transparent' }}>
+                <div className="display" style={{ width: 20, color: T.muted, fontWeight: 700, fontSize: 15 }}>
+                  {i + 1}
+                </div>
+                <div style={{ fontSize: 22 }}>{t.emoji}</div>
+                <div style={{ flex: 1, fontFamily: 'var(--display)', fontWeight: 600, fontSize: 16,
+                  color: T.navy }}>
+                  {t.name}
+                  {t.id === team.id && gained > 0 && (
+                    <span style={{ color: T.okDeep, fontWeight: 800, fontSize: 13, marginLeft: 8 }}>
+                      +{gained}
+                    </span>
+                  )}
+                </div>
+                <div className="display" style={{ fontWeight: 700, fontSize: 19, color: T.navy }}>
+                  {state.scores[t.id] || 0}
+                  <span style={{ color: T.muted, fontWeight: 700, fontSize: 13 }}>/{state.target}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div style={{ background: '#fff', borderRadius: 20, padding: 16, boxShadow: T.shadowSm,
+        flex: 1, minHeight: 100, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         <div className="display" style={{ fontSize: 15, fontWeight: 600, color: T.muted,
-          marginBottom: 10, letterSpacing: '.5px' }}>PALAVRAS</div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          marginBottom: 10, letterSpacing: '.5px', flexShrink: 0 }}>PALAVRAS</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, overflowY: 'auto', flex: 1, minHeight: 0 }}>
           {results.map((r, i) => (
             <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <div style={{ width: 24, height: 24, borderRadius: 8, flexShrink: 0,
@@ -252,10 +301,15 @@ export function RoundResult({ go, state, nextTurn }) {
                 color: r.got ? T.okDeep : T.skipDeep, display: 'grid', placeItems: 'center' }}>
                 <Icon name={r.got ? 'check' : 'close'} size={15} stroke={3} />
               </div>
-              <div style={{ fontWeight: 700, fontSize: 16,
+              <div style={{ flex: 1, fontWeight: 700, fontSize: 16,
                 color: r.got ? T.navy : T.muted, textDecoration: r.got ? 'none' : 'line-through' }}>
                 {r.word}
               </div>
+              {r.got && (
+                <div className="display" style={{ fontWeight: 700, fontSize: 14, color: T.okDeep }}>
+                  +{wordPoints(r.word)}
+                </div>
+              )}
             </div>
           ))}
           {!results.length && (
@@ -264,7 +318,7 @@ export function RoundResult({ go, state, nextTurn }) {
         </div>
       </div>
 
-      <Btn full variant="primary" style={{ marginTop: 16 }} onClick={nextTurn}>
+      <Btn full variant="primary" style={{ marginTop: 16, flexShrink: 0 }} onClick={nextTurn}>
         Próximo time <Icon name="arrowR" size={22} />
       </Btn>
     </Body>

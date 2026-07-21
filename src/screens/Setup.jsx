@@ -1,7 +1,7 @@
 import React from 'react'
 import { T, Btn, IconBtn, Eyebrow } from '../theme.jsx'
 import { Icon } from '../icons.jsx'
-import { MODES, PACKS } from '../data.js'
+import { MODES, PACKS, DIFFICULTY } from '../data.js'
 
 export function Body({ children, bg = T.page, pad = 24, style = {} }) {
   return (
@@ -166,6 +166,27 @@ export function Packs({ go, state, set }) {
           )
         })}
       </div>
+      <div style={{ marginTop: 22 }}>
+        <div className="display" style={{ fontSize: 15, fontWeight: 600, color: T.muted,
+          marginBottom: 10, letterSpacing: '.5px' }}>DIFICULDADE</div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {[{ id: 'all', name: 'Todas', color: T.teal }].concat(
+            Object.values(DIFFICULTY).map(d => ({ id: String(d.level), name: d.name, color: d.color }))
+          ).map(opt => {
+            const on = String(state.difficulty) === opt.id
+            return (
+              <button key={opt.id} onClick={() => set({ difficulty: opt.id })}
+                style={{ flex: 1, padding: '11px 4px', borderRadius: 14,
+                  border: `2.5px solid ${on ? opt.color : T.edge}`,
+                  background: on ? `${opt.color}1a` : '#fff', color: on ? opt.color : T.muted,
+                  fontFamily: 'var(--display)', fontWeight: 700, fontSize: 14, transition: 'all .18s' }}>
+                {opt.name}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
       <div style={{ flex: 1, minHeight: 16 }} />
       <Btn full variant="primary" disabled={!state.packs.length} style={{ marginTop: 16 }}
         onClick={() => go('teams')}>

@@ -126,11 +126,53 @@ export const PACKS = [
       'Shazam','Arqueiro Verde','Mercúrio','Duende Verde','Coringa'] },
 ]
 
-export function buildDeck(packIds) {
+// ── DIFICULDADE ───────────────────────────────────────────────────
+// Metadados de cada nível: nome, cor e pontos que a palavra vale.
+export const DIFFICULTY = {
+  1: { level: 1, name: 'Fácil',   color: '#57bf95', points: 1 },
+  2: { level: 2, name: 'Médio',   color: '#ffc83d', points: 2 },
+  3: { level: 3, name: 'Difícil', color: '#ff7a3d', points: 3 },
+}
+
+// Viés de dificuldade por tema: temas concretos/universais são mais fáceis;
+// abstratos ou de nicho cultural são mais difíceis de encenar/adivinhar.
+const PACK_LEVEL = {
+  animais: 1, comidas: 1, frutas: 1, roupas: 1, transporte: 1, esportes: 1,
+  acoes: 1, objetos: 1, cores: 1,
+  instrumentos: 2, ferramentas: 2, profissoes: 2, lugares: 2, natureza: 2,
+  superherois: 2, personagens: 2, filmes: 2, paises: 2,
+  emocoes: 3, lendas: 3, famosos: 3,
+}
+
+// Infere a dificuldade (1=Fácil, 2=Médio, 3=Difícil) de uma palavra a partir
+// do tema-base + ajustes por forma: nomes compostos e palavras longas sobem;
+// palavras curtas de uma sílaba/token descem. Sempre limitado a [1, 3].
+export function difficultyForWord(word) {
+  const pack = PACKS.find(p => p.words.includes(word))
+  let level = pack ? (PACK_LEVEL[pack.id] ?? 2) : 2
+  const tokens = word.split(/[\s-]+/).filter(Boolean).length
+  const len = word.replace(/\s/g, '').length
+  if (tokens >= 2) level += 1            // nomes compostos são mais difíceis
+  if (len >= 13) level += 1              // palavras muito longas
+  if (tokens === 1 && len <= 5) level -= 1 // curtas e simples são mais fáceis
+  return Math.max(1, Math.min(3, level))
+}
+
+// Pontos que a palavra vale (atalho para DIFFICULTY[nível].points).
+export function wordPoints(word) {
+  return DIFFICULTY[difficultyForWord(word)].points
+}
+
+export function buildDeck(packIds, difficulty = 'all') {
   let pool = []
   PACKS.filter(p => packIds.includes(p.id)).forEach(p => { pool = pool.concat(p.words) })
   if (!pool.length) pool = PACKS[0].words.slice()
   pool = [...new Set(pool)] // remove duplicatas entre pacotes (ex.: "Tubarão")
+  if (difficulty && difficulty !== 'all') {
+    const lvl = Number(difficulty)
+    const filtered = pool.filter(w => difficultyForWord(w) === lvl)
+    if (filtered.length) pool = filtered // evita baralho vazio se o filtro zerar
+  }
   for (let i = pool.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [pool[i], pool[j]] = [pool[j], pool[i]]

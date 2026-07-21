@@ -1,6 +1,6 @@
 import React from 'react'
 import { T } from './theme.jsx'
-import { buildDeck } from './data.js'
+import { buildDeck, wordPoints } from './data.js'
 import { Home, ModeSelect, Packs, HowToPlay, Settings } from './screens/Setup.jsx'
 import { Teams, Ready } from './screens/Teams.jsx'
 import { Play, RoundResult, Winner } from './screens/Play.jsx'
@@ -9,6 +9,7 @@ const DEFAULT = () => ({
   screen: 'home',
   mode: 'mimica',
   packs: ['animais', 'filmes'],
+  difficulty: 'all',
   teams: T.teams.slice(0, 2).map((p, i) => ({
     id: i + 1, name: p.name, palette: p.id, c1: p.c1, c2: p.c2, emoji: p.emoji,
   })),
@@ -32,7 +33,9 @@ export default function App() {
   // `shown` = palavras exibidas na rodada (inclui a que ficou na tela ao acabar
   // o tempo, mesmo não resolvida) para não repetir para o próximo time.
   const finishRound = (team, results, shown = results.length) => {
-    const gained = results.filter(r => r.got).length - (st.penalty ? results.filter(r => !r.got).length : 0)
+    // acerto vale os pontos da dificuldade da palavra; pulo penaliza -1 (se ligado)
+    const gained = results.reduce((s, r) =>
+      s + (r.got ? wordPoints(r.word) : (st.penalty ? -1 : 0)), 0)
     const scores = { ...st.scores, [team.id]: Math.max(0, (st.scores[team.id] || 0) + gained) }
     setSt(s => ({ ...s, scores, cursor: s.cursor + shown,
       lastRound: { team, results, gained }, screen: 'roundresult' }))
@@ -48,10 +51,11 @@ export default function App() {
   const reset = () => setSt(s => ({
     ...DEFAULT(), teams: s.teams, mode: s.mode, packs: s.packs,
     roundTime: s.roundTime, target: s.target, sound: s.sound, haptics: s.haptics, penalty: s.penalty,
-    screen: 'ready', turn: 0, scores: {}, deck: buildDeck(s.packs), cursor: 0,
+    difficulty: s.difficulty,
+    screen: 'ready', turn: 0, scores: {}, deck: buildDeck(s.packs, s.difficulty), cursor: 0,
   }))
 
-  const goReady = () => setSt(s => ({ ...s, deck: buildDeck(s.packs), cursor: 0, screen: 'ready' }))
+  const goReady = () => setSt(s => ({ ...s, deck: buildDeck(s.packs, s.difficulty), cursor: 0, screen: 'ready' }))
   const enhancedGo = (screen) => {
     if (screen === 'ready') { goReady(); return }
     go(screen)

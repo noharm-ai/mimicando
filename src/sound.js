@@ -61,6 +61,38 @@ export function playWhistle(dur = 1.0) {
   } catch { /* áudio nunca deve quebrar o jogo */ }
 }
 
+// Sirene contínua: varre a frequência para cima/baixo até ser parada.
+// Retorna uma função que para a sirene (com fade-out para evitar "click").
+export function startSiren() {
+  try {
+    const c = getCtx(); if (!c) return () => {}
+    const t0 = c.currentTime
+    const osc = c.createOscillator()
+    const gain = c.createGain()
+    const lfo = c.createOscillator()       // modula a frequência (varredura)
+    const lfoGain = c.createGain()
+    osc.type = 'sawtooth'
+    osc.frequency.setValueAtTime(760, t0)
+    lfo.type = 'sine'
+    lfo.frequency.setValueAtTime(0.7, t0)  // ~0.7 varreduras por segundo
+    lfoGain.gain.setValueAtTime(320, t0)   // desvio de ±320 Hz
+    lfo.connect(lfoGain).connect(osc.frequency)
+    gain.gain.setValueAtTime(0.0001, t0)
+    gain.gain.exponentialRampToValueAtTime(0.3, t0 + 0.08)
+    osc.connect(gain).connect(c.destination)
+    osc.start(t0); lfo.start(t0)
+    return () => {
+      try {
+        const t = c.currentTime
+        gain.gain.cancelScheduledValues(t)
+        gain.gain.setValueAtTime(gain.gain.value, t)
+        gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.08)
+        osc.stop(t + 0.1); lfo.stop(t + 0.1)
+      } catch { /* já parada */ }
+    }
+  } catch { return () => {} }
+}
+
 // Buzina: um tom grave e áspero, contínuo. dur = duração em segundos.
 export function playBuzzer(dur = 2.0) {
   try {
